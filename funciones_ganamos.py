@@ -10,6 +10,8 @@ csv_file = 'data.csv'
 
 
 def login_ganamos(usuario, contrasenia):
+    import requests
+
     url = 'https://agents.ganamos.bet/api/user/login'
 
     data = {
@@ -31,13 +33,19 @@ def login_ganamos(usuario, contrasenia):
             print(f"❌ Error en login: {response.status_code} - {response.text}")
             return {}, None
 
+        try:
+            response_json = response.json()
+        except Exception as e:
+            print("⚠️ Error al parsear JSON del login:", e)
+            print("Respuesta cruda:", response.text)
+            return {}, None
+
         # Extraer la cookie de sesión
         session_id = response.cookies.get("session")
         if not session_id:
             print("⚠️ Login exitoso pero no se recibió la cookie de sesión")
             return {}, None
 
-        # Headers con cookie para siguientes requests
         header_check = {
             "Accept": "application/json",
             "Referer": "https://agents.ganamos.bet/",
@@ -45,16 +53,20 @@ def login_ganamos(usuario, contrasenia):
             "cookie": f'session={session_id}'
         }
 
-        # Obtener ID del usuario logueado
         url_check = "https://agents.ganamos.bet/api/user/check"
         response_check = requests.get(url_check, headers=header_check)
+
         if response_check.status_code != 200:
             print("❌ Falló /user/check:", response_check.text)
             return {}, None
 
-        parent_id = response_check.json()['result']['id']
+        try:
+            parent_id = response_check.json()['result']['id']
+        except Exception as e:
+            print("⚠️ Error al parsear JSON de /user/check:", e)
+            print("Respuesta:", response_check.text)
+            return {}, None
 
-        # Obtener usuarios
         url_users = 'https://agents.ganamos.bet/api/agent_admin/user/'
         params_users = {
             'count': '10',
@@ -65,18 +77,24 @@ def login_ganamos(usuario, contrasenia):
         }
 
         response_users = requests.get(url_users, params=params_users, headers=header_check)
+
         if response_users.status_code != 200:
             print("❌ Falló /agent_admin/user:", response_users.text)
             return {}, None
 
-        lista_usuarios = {
-            x['username']: x['id'] for x in response_users.json()["result"]["users"]
-        }
+        try:
+            lista_usuarios = {
+                x['username']: x['id'] for x in response_users.json()["result"]["users"]
+            }
+        except Exception as e:
+            print("⚠️ Error al parsear JSON de /agent_admin/user:", e)
+            print("Respuesta:", response_users.text)
+            return {}, None
 
         return lista_usuarios, session_id
 
     except Exception as e:
-        print("🔥 Excepción en login_ganamos:", str(e))
+        print("🔥 Excepción general en login_ganamos:", str(e))
         return {}, None
 
 def carga_ganamos(alias, monto, usuario, contrasenia):
