@@ -2,7 +2,7 @@ import streamlit as st
 from funciones_ganamos import *
 
 
-main = st.set_page_config(page_title="test ganamos")
+st.set_page_config(page_title="test ganamos")
 
 col1, col2 = st.columns(2)
 with col1:
@@ -15,6 +15,3 @@ with col1:
             st.success(respuesta)
         else:
             st.error(respuesta)
-
-if main == "__main__":
-    main()
